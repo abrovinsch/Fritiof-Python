@@ -15,7 +15,7 @@ Then we give the Fritiof object a .fritiof file and tell it to return a string.
 Let's say we have a file named `my_fritiof_file.fritiof` and would like to print a random string from its `awesome_name` Tag. We could do it like this:
 ```python
 my_fritiof_object.load("~/my_fritiof_file.fritiof")
-awesome_name_result = my_fritiof_object.execute_fritiof("#awesome_name#")
+awesome_name_result = my_fritiof_object.execute("#awesome_name#")
 print(awesome_name_result)
 ```
 

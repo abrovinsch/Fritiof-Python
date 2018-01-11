@@ -8,14 +8,7 @@ import os
 
 class FritiofObject:
 
-    #Internal data
-    tags = {}
-    dictionary_directory = ""
-    debug_mode = False
-    filepath = ""
-
     # Syntax Definitions
-    __symbol_empty_line_marker = "#"
     __symbol_new_tag = "§"
     __symbol_pair_delimiter = "|"
     __symbol_invisible_marker = "^"
@@ -23,30 +16,37 @@ class FritiofObject:
     __symbol_insert_file = "-insert"
     __symbol_inline_commment = "//"
     __unallowed_symbols = "§[]{}()¨^*|#:; \n\"\'"
+    __symbol_file_ending = "fritiof"
+
+    def __init__(self):
+        self.tags = {}
+        self.dictionary_directory = ""
+        self.debug_mode = False
+        self.filepath = ""
 
     # Loads a .fritiof file and adds all it's data to tags
-    def load(self,_path):
+    def load(self,path_to_load):
 
         # Extract the name of the file and the directory from the path
-        _path = os.path.expanduser(_path)
+        path_to_load = os.path.expanduser(path_to_load)
 
-        if not os.path.exists(_path):
-            print("Fritiof Error: No such file: %s" % _path)
+        if not os.path.exists(path_to_load):
+            print("Fritiof Error: No such file: %s" % path_to_load)
             return
 
-        file_name = os.path.basename(_path)
-        self.dictionary_directory = os.path.dirname(_path)
+        file_name = os.path.basename(path_to_load)
+        self.dictionary_directory = os.path.dirname(path_to_load)
 
         # Ignore files that does not have a .fritiof extension
-        if not file_name.endswith(".fritiof"):
-            print("Fritiof Error: can only open files with the .fritiof extension (%s)" % file_name)
+        if not file_name.endswith(".%s" % self.__symbol_file_ending):
+            print("Fritiof Error: can only open files with the .%s extension (%s)" % (self.__symbol_file_ending, file_name))
             return
 
         # Load the contents of the original file
-        sourcefile = open(_path)
+        sourcefile = open(path_to_load)
         file_content = sourcefile.read()
         sourcefile.close()
-        self.filepath = _path
+        self.filepath = path_to_load
 
         # Insert any referenced files
         file_content = self.insert_external_files(file_content)
@@ -60,13 +60,13 @@ class FritiofObject:
             # Remove inline comments
             line = re.sub(self.__symbol_inline_commment + r'.*',"",line)
 
+            # Remove whitespace delimiters
+            while self.__symbol_invisible_marker in line:
+                line = line.replace(self.__symbol_invisible_marker,"")
+
             # Ignore empty lines
             if line == "":
                 continue
-
-            # Remove empty lines markers
-            if line ==self.__symbol_empty_line_marker:
-                line = ""
 
             # Handle pairs
             if self.__symbol_pair_delimiter in line:
@@ -77,10 +77,6 @@ class FritiofObject:
                     pair_index = pair_index + 1
                     line += ("[pair%d:%s]" % (pair_index, part))
 
-            # Remove whitespace delimiters
-            while self.__symbol_invisible_marker in line:
-                line = line.replace(self.__symbol_invisible_marker,"")
-
             # Handle tag-separation symbols
             if line.startswith(self.__symbol_new_tag):
                 current_tag_name = line[1:]
@@ -88,7 +84,7 @@ class FritiofObject:
                     print ("Fritiof Syntax Error: a tag must have a name of at least 1 (%s)" % line)
                     return
 
-                if not self.allowed_tag_name(current_tag_name):
+                if not self.is_allowed_tag_name(current_tag_name):
                     self.tags = {}
                     return
             else:
@@ -98,33 +94,33 @@ class FritiofObject:
                 self.add_tag(current_tag_name,line)
 
     # Adds a single string to a tag. If the key is new, a new tag is created
-    def add_tag(self,_key, _content):
+    def add_tag(self,tag_name, tag_contents):
         # If the tag already exists, just add it to that list
-        if(_key in self.tags):
-            self.tags[_key].append(_content)
+        if(tag_name in self.tags):
+            self.tags[tag_name].append(tag_contents)
         # Otherwise we create that list and add the first element
         else:
-            self.tags[_key] = list()
-            self.tags[_key].append(_content)
+            self.tags[tag_name] = list()
+            self.tags[tag_name].append(tag_contents)
 
     # Returns a random string from a tag
-    def get_string_from_tag(self,_key):
+    def get_string_from_tag(self,tag):
 
         if self.debug_mode:
             wrapper = "{%s}"
         else:
             wrapper = "%s"
 
-        if _key in self.tags:
-            index = randint(0,len(self.tags[_key])-1)
-            return wrapper % self.tags[_key][index]
+        if tag in self.tags:
+            index = randint(0,len(self.tags[tag])-1)
+            return wrapper % self.tags[tag][index]
         else:
-            print ("Fritiof Error: no such tag or variable '%s'" % _key)
-            return "{%s}" % _key
+            print ("Fritiof Error: no such tag or variable '%s'" % tag)
+            return "{%s}" % tag
 
-    # Returns the string processed with these fritiof
-    def execute_fritiof(self,_string):
-        result = _string
+    # Executes a single line of fritiof and returns the resulting string (if any)
+    def execute(self, line_of_code):
+        result = line_of_code
 
         find_var_setting_regex = r'\[[^:]+:[^\]]*\]'
         tagsearch_obj = re.search(r'#[^#]+#',result,flags=0)
@@ -174,15 +170,15 @@ class FritiofObject:
         return result
 
     # Inserts the content of any referenced files into the file
-    def insert_external_files(self,_source):
+    def insert_external_files(self,source):
         result = "";
 
-        for line in _source.split("\n"):
+        for line in source.split("\n"):
 
             if line.startswith(self.__symbol_insert_file):
                 if self.dictionary_directory == "":
                     print("Fritiof Error: No dictionary directory set!")
-                    return _source
+                    return source
                 fileToInsert = line[8:]
 
                 sourcefile = open(self.dictionary_directory + "/" + fileToInsert + ".fritiof")
@@ -198,7 +194,7 @@ class FritiofObject:
         return result
 
     # Returns if the string is a valid name for a tag
-    def allowed_tag_name(self, string):
+    def is_allowed_tag_name(self, string):
         for l in self.__unallowed_symbols:
             if l in string:
                 print("Fritiof Syntax Error: Unallowed symbol '%s' in tag name '§%s'" % (l, string))
@@ -229,19 +225,16 @@ class FritiofObject:
             else:
                 last_command_input = command_input
 
-            print (self.execute_fritiof("#" + command_input + "#"))
+            print (self.execute("#" + command_input + "#"))
             command_input = input("")
 
-    def reload_file(self,_path):
+    def reload_file(self,path_to_load):
         # Reset the object
         self.tags = {}
         self.dictionary_directory = ""
-        self.load(_path)
+        self.load(path_to_load)
 
     def export_tracery(self, compact = False):
-
-        # Export tags
-        tagStrings = []
 
         if compact:
             joiner = '","'
@@ -252,6 +245,8 @@ class FritiofObject:
             wrapper = '"%s":[\n"%s"\n]'
             tag_separator = ",\n\n"
 
+        # Convert data to tracery format
+        tagStrings = []
         for key in self.tags.keys():
             tagStrings.append(wrapper % (key, joiner.join(self.tags[key])))
         output = tag_separator.join(tagStrings) + "\n"
@@ -276,7 +271,7 @@ class FritiofObject:
 
         print("Exported Tracery to %s" % exportPath)
 
-def test_file(_file):
+def test_file(file):
     testfritiofObject = FritiofObject()
-    testfritiofObject.load(_file)
+    testfritiofObject.load(file)
     testfritiofObject.test()
