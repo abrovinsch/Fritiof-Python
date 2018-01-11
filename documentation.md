@@ -5,7 +5,7 @@ This module interprets the Fritiof markup language,
 made for generating procedural text.
 
 Information about how to use it can be found at:
-https://github.com/abrovinsch/Fritiof-Python/blob/master/readme.md*
+https://github.com/abrovinsch/Fritiof-Python/blob/master/readme.md
 
 ## Functions:
 ### is_allowed_tag_name(string)
@@ -16,6 +16,7 @@ Continually tests a file
 
 
 ## Data
+```python
 SYNTAX_FILE_ENDING = 'fritiof'
 SYNTAX_INLINE_COMMENT = '//'
 SYNTAX_INSERT_FILE = '-insert'
@@ -23,6 +24,7 @@ SYNTAX_INVISIBLE_MARKER = '^'
 SYNTAX_NEW_TAG = '\xc2\xa7'
 SYNTAX_PAIR_DELIMITER = '|'
 SYNTAX_SET_DICTIONARY_FOLDER = '-dictionary'
+```
 
 # class FritiofObject
 A FritiofObject contains defintions of tags and variables.
