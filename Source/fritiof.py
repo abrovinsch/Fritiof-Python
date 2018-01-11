@@ -181,7 +181,14 @@ class FritiofObject:
                     return source
                 fileToInsert = line[8:]
 
-                sourcefile = open(self.dictionary_directory + "/" + fileToInsert + ".fritiof")
+                file_path = self.dictionary_directory + "/" + fileToInsert + "." + self.__symbol_file_ending
+                file_path = os.path.expanduser(file_path)
+
+                if not os.path.exists(file_path):
+                    print("Fritiof Error: Cant insert non-existing file: %s" % path_to_load)
+                    return
+
+                sourcefile = open(file_path)
                 str = sourcefile.read()
                 result += "\n" + str;
             elif line.startswith(self.__symbol_set_dictionary_folder):
