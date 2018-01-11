@@ -71,7 +71,6 @@ class FritiofObject:
 
         # Go through line for line
         for line in file_content.split("\n"):
-
             # Remove inline comments
             line = re.sub(SYNTAX_INLINE_COMMENT + r'.*', "", line)
 
@@ -94,11 +93,7 @@ class FritiofObject:
 
             # Handle tag-separation symbols
             if line.startswith(SYNTAX_NEW_TAG):
-                current_tag_name = line[1:]
-                if current_tag_name == "":
-                    print("Fritiof Syntax Error: a tag must have a name of at least 1 (%s)" % line)
-                    return
-
+                current_tag_name = line[1:].rstrip()
                 if not is_allowed_tag_name(current_tag_name):
                     self.tags = {}
                     return
@@ -143,7 +138,6 @@ class FritiofObject:
         set_var_search_obj = re.search(find_var_setting_regex, result, flags=0)
 
         while tagsearch_obj or set_var_search_obj:
-
             # Determine what comes first, a variable setting or a string grab
             set_index = SYS_MAX_INT
             string_index = SYS_MAX_INT
@@ -156,15 +150,13 @@ class FritiofObject:
             if set_index > string_index:
                 tag = tagsearch_obj.group().replace("#", "")
                 if tag.endswith(".capitalize"):
-                    tag = tag.replace(".capitalize", "")
-                    new_string = self.get_string_from_tag(tag)
+                    fixed_tag = tag.replace(".capitalize", "")
+                    new_string = self.get_string_from_tag(fixed_tag)
                     new_string = new_string.capitalize()
                 else:
                     new_string = self.get_string_from_tag(tag)
 
                 result = result.replace("#%s#" % tag, new_string, 1)
-                tagsearch_obj = re.search(r'#[^#]+#', result, flags=0)
-                set_var_search_obj = re.search(find_var_setting_regex, result, flags=0)
 
             # Set the first variable
             else:
@@ -172,11 +164,13 @@ class FritiofObject:
                 parts = line.split(":")
                 var_name = parts[0]
                 value = parts[1]
+
                 result = result.replace(set_var_search_obj.group(), "", 1)
                 self.tags[var_name] = list()
                 self.add_tag(var_name, value)
-                set_var_search_obj = re.search(find_var_setting_regex, result, flags=0)
-                tagsearch_obj = re.search(r'#[^#]+#', result, flags=0)
+
+            set_var_search_obj = re.search(find_var_setting_regex, result, flags=0)
+            tagsearch_obj = re.search(r'#[^#]+#', result, flags=0)
 
         result = result.replace("\\\"", "\"")
         return result
@@ -232,17 +226,18 @@ class FritiofObject:
                 continue
 
             # Reset this object and reload the file
-            self.tags = {}
-            self.dictionary_directory = ""
-            self.load(self.filepath)
-
             if command_input == "":
                 command_input = last_command_input
             else:
                 last_command_input = command_input
 
             print(self.execute("#" + command_input + "#"))
+
             command_input = input("")
+
+            self.tags = {}
+            self.dictionary_directory = ""
+            self.load(self.filepath)
 
     def export_tracery(self, compact=False):
         """Converts this Fritiof to tracery and exports it as a file"""
@@ -284,12 +279,16 @@ class FritiofObject:
 def test_file(file):
     """Continually tests a file"""
 
+    print("Testing %s..." % file)
     test_fritiofobject = FritiofObject()
     test_fritiofobject.load(file)
     test_fritiofobject.test()
 
 def is_allowed_tag_name(string):
     """Returns if the string is a valid name for a tag"""
+    if string == "":
+        print("Fritiof Syntax Error: a tag must have a name of at least 1 (%s)" % string)
+        return False
 
     for symbol in UNALLOWED_SYMBOLS:
         if symbol in string:
