@@ -2,7 +2,7 @@
 
 ## Using Fritiof with Python
 
-*Tip! If you don't know how fritiof works, please consult the 'How fritiof works' section*.
+*Tip! If you don't know how Fritiof works, please consult the 'How fritiof works' section*.
 
 To use Fritiof Python, start by importing this module and create a Fritiof object:
 ```python
@@ -19,7 +19,7 @@ awesome_name_result = my_fritiof_object.execute("#awesome_name#")
 print(awesome_name_result)
 ```
 
-The method `doFritiofOnString()` takes a fritiof statement, executes it and then returns the resulting string (if any). In this case, we feed it a `#grab#` statement, telling Fritiof to return a random item from a tag.
+The method `execute()` takes a fritiof statement, executes it and then returns the resulting string (if any). In this case, we feed it a `#grab#` statement, telling Fritiof to return a random item from the tag `awesome_name`.
 
 ### Using test() to test your fritiof
 When writing Fritiof, it is very useful to coninually test the results of different statements. You can do this by using the test() method in the command line, likes so:
@@ -29,9 +29,9 @@ my_fritiof_object.load("~/my_fritiof_file.fritiof")
 my_fritiof_object.test()
 ```
 
-Doing this will let you enter the name of any Tag in the fritiof and print a string from it, coninually. If you leave the input blank, it will get one from the same tag as last time. Enter 'exit' when you want to stop testing.
+Doing this will let you enter the name of any Tag in the fritiof and print a string from it, continually. If you leave the input blank, it will get one from the same tag as last time. Enter 'exit' when you want to stop testing.
 
-*Tip! Test() automatically reloads your fritiof-files between runs so you can immediately se the results of your edits*
+*Tip! Test() automatically reloads your fritiof-files between runs so you can immediately see the results of your edits*
 
 Another useful feature when using test() is to look at all the tags currently created. Enter `list_tags` and you will get a list of every tag defined in the fritiofObject.
 
@@ -47,7 +47,7 @@ This will automatically load the file and do `test()` on it
 
 ## Exporting to Tracery / JSON
 
-If you want to, you can export to tracery, if for example you would want to use the excellent service www.cheapbotsdonequick.com.
+If you want to, you can export to tracery, which is used by, for example, the excellent service www.cheapbotsdonequick.com.
 
 To do this, run the following code:
 
@@ -63,7 +63,7 @@ This will create a file named *bot_tracery.txt* in the *~/twitterbot/* folder. I
 *Tip! When running test() you can enter `export_tracery` to immediately export the current version of your project to tracery*
 
 # The Fritiof Markup Language
-The Fritiof is a markup language is used to generate text combining many text-snippets. The main idea is that you define *tags*, which are lists of strings and then combine random items of those tags for interesting results. It is largely inpsired by the language Tracery created by Kate Compton.
+The Fritiof is a markup language is used to generate text combining many text-snippets. The main idea is that you define *tags*, which are lists of strings and then combine random items of those tags for interesting results. It is largely inspired by the language Tracery created by Kate Compton.
 
 ## How fritiof works
 Let's say we wanted to create a random name generator, consisting of a first name and a last name. We would need to first create a list of first names and a list of last names. These lists are called **tags**. We can create the two new tags by typing:
@@ -96,7 +96,7 @@ inside the box #inside_the_box#
 is a treasure
 ```
 
-Here, `#inside_the_box#` could result something like *"inside the box inside the box inside the box inside the box is a treasure"*
+Here, `#inside_the_box#` could return something like *"inside the box inside the box inside the box inside the box is a treasure"*
 
 ## Advanced Fritiof features
 
@@ -110,19 +110,19 @@ You can create variables at any time by using the syntax `[variable_name:value]`
 ```
 Now, `my_name_is` will return "My name is Evert.". The variable `name` was set to "Evert" and then used using the #grab# syntax from earlier.
 
-The value doesn't have be a string literal but can just as well include #grab# statements. Example:
+The value doesn't have to be a string literal but can just as well include #grab# statements. Example:
 ```
 §i_have_a_pet
-[pet:#animal#]I have pet #pet#. It is a nice #pet#.
+[pet:#animal#]I have a pet #pet#. It is a nice #pet#.
 
 §animal
 dog
 cat
 ```
 
-Now `#i_have_a_pet#` will either return "I have pet dog. It is a nice dog." OR "I have pet cat. It is a nice cat."
+Now, `#i_have_a_pet#` will either return "I have a pet dog. It is a nice dog." OR "I have a pet cat. It is a nice cat."
 
-*NOTE: The variables are dynamically created on runtime whenever the line of code is inserted in a string. Variable declarations are always executed left from right, depth first.*
+*NOTE: The variables are dynamically created at runtime whenever the line of code is inserted in a string. Variable declarations are always executed left from right, depth-first.*
 
 ### Pairs
 
@@ -141,7 +141,7 @@ feed|cat
 
 This will return either "I will ride my horse." or "I will walk my dog." or "I will feed my cat"
 
-Despite it's name, a pair doesnt need to be made up of only two parts. You can add as many parts as you like and access them through `#pair3#`, `#pair4#`, `#pair5#` etc. This can be great when listing inflections of verbs or writing similar "tables":
+Despite its name, a pair doesn't need to be made up of only two parts. You can add as many parts as you like and access them through `#pair3#`, `#pair4#`, `#pair5#` etc. This can be great when listing inflections of verbs or writing similar "tables":
 ```
 §irregular_verbs
 do|did|done
@@ -151,9 +151,9 @@ eat|ate|eaten
 
 ### Emptiness markers
 
-What if we wanted to add an empty line to our tag? Just leaving a line blank won't work since that will be ignored by the interpreter. Instead we will have to explicitly add an empty line by printing an emptiness marker: `^`.
+What if we wanted to add an empty line to our tag? Just leaving a line blank won't work since that will be ignored by the interpreter. Instead, we will have to explicitly add an empty line by printing an emptiness marker: `^`.
 
-For instance we might want to have a tag with 50% chance of returning "snoddas" and 50% chance of returning norhing. We would write that like this:
+For instance, we might want to have a tag with 50% chance of returning "snoddas" and 50% chance of returning nothing. We would write that like this:
 
 ```
 §maybe_snoddas
@@ -161,7 +161,7 @@ snoddas
 ^
 ```
 
-The emptiness marker is also used for when you want to end a line with whitespace. Whitespace at the end of lines will be removed by the interpreter, so if you want to explicitly tell to end with, for instance, a space, you can put an emptiness marker after the whitespace character.
+The emptiness marker is also used for when you want to end a line with whitespace. Whitespace at the end of lines will be removed by the interpreter, so if you want to explicitly tell to end with, for instance, space, you can put an emptiness marker after the whitespace character.
 
 Example:
 ```
@@ -175,9 +175,9 @@ Here, `#cow_with_space#` would return "cow ".
 
 If you want to, you can split your project across many files. Use *insert* to load the entire contents of a given file. The syntax for this insert looks like this: `-insert <path of file without file extension>`
 
-To do this however, you need to specify where the directory with the other .fritiof files exist. This directory is referred to as the *dictionary*. To specify where the dictionary-path, use this syntax: `-dictionary <path of dictionary folder>`
+To do this, however, you need to specify where the directory with the other .fritiof files exists. This directory is referred to as the *dictionary*. To specify where the dictionary-path, use this syntax: `-dictionary <path of dictionary folder>`
 
-Lets say we have a *my_dictionary folder* with a *fruit.fritiof* and a *colors.fritiof* file which we would like to use. We could insert them like this:
+Let's say we have a *my_dictionary folder* with a *fruit.fritiof* and a *colors.fritiof* file which we would like to use. We could insert them like this:
 ```
 -dictionary /users/abrovinsch/my_dictionary
 -insert fruit
@@ -193,7 +193,7 @@ Here, calling `#i_want_a_fruit#` would return something like "I want a blue bana
 
 # Support
 
-This is just a hobby project for me and I dont give any promises to support this project, or any guarantees of quality. However I might be able to help you or answer any questions if you reach out to me at my twitter **@kaptenskojare**. If you don't have twitter, send me an email at **lundqvist.oskar01@gmail.com**.
+This is just a hobby project for me and I don't give any promises to support this project, or any guarantees of quality. However, I might be able to help you or answer any questions if you reach out to me at my twitter **@kaptenskojare**. If you don't have twitter, send me an email at **lundqvist.oskar01@gmail.com**.
 
 Good luck!
 
