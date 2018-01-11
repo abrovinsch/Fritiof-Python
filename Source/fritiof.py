@@ -1,21 +1,36 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/python
+"""
+'Fritiof for Python'
+by Oskar Lundqvist / Abrovinsch (c) 2017
+
+This module interprets the Fritiof markup language,
+made for generating procedural text.
+
+Information about how to use it can be found at:
+https://github.com/abrovinsch/Fritiof-Python/blob/master/readme.md
+"""
 
 from random import randint
 import re
 import os
 
-class FritiofObject:
+# Syntax Definitions
+SYNTAX_NEW_TAG = "§"
+SYNTAX_PAIR_DELIMITER = "|"
+SYNTAX_INVISIBLE_MARKER = "^"
+SYNTAX_SET_DICTIONARY_FOLDER = "-dictionary"
+SYNTAX_INSERT_FILE = "-insert"
+SYNTAX_INLINE_COMMENT = "//"
+SYNTAX_FILE_ENDING = "fritiof"
 
-    # Syntax Definitions
-    __symbol_new_tag = "§"
-    __symbol_pair_delimiter = "|"
-    __symbol_invisible_marker = "^"
-    __symbol_set_dictionary_folder = "-dictionary"
-    __symbol_insert_file = "-insert"
-    __symbol_inline_commment = "//"
-    __unallowed_symbols = "§[]{}()¨^*|#:; \n\"\'"
-    __symbol_file_ending = "fritiof"
+UNALLOWED_SYMBOLS = "§[]{}()¨^*|#:; \n\"\'"
+SYS_MAX_INT = 2147483647
+
+class FritiofObject:
+    """
+    A FritiofObject contains defintions of tags and variables.
+    """
 
     def __init__(self):
         self.tags = {}
@@ -23,8 +38,8 @@ class FritiofObject:
         self.debug_mode = False
         self.filepath = ""
 
-    # Loads a .fritiof file and adds all it's data to tags
     def load(self, path_to_load):
+        """Loads a .fritiof file and adds all it's data to tags"""
 
         # Extract the name of the file and the directory from the path
         path_to_load = os.path.expanduser(path_to_load)
@@ -37,8 +52,9 @@ class FritiofObject:
         self.dictionary_directory = os.path.dirname(path_to_load)
 
         # Ignore files that does not have a .fritiof extension
-        if not file_name.endswith(".%s" % self.__symbol_file_ending):
-            print("Fritiof Error: can only open files with the .%s extension (%s)" % (self.__symbol_file_ending, file_name))
+        if not file_name.endswith(".%s" % SYNTAX_FILE_ENDING):
+            print("Fritiof Error: can only open files with the .%s extension (%s)"
+                  % (SYNTAX_FILE_ENDING, file_name))
             return
 
         # Load the contents of the original file
@@ -57,19 +73,19 @@ class FritiofObject:
         for line in file_content.split("\n"):
 
             # Remove inline comments
-            line = re.sub(self.__symbol_inline_commment + r'.*', "", line)
+            line = re.sub(SYNTAX_INLINE_COMMENT + r'.*', "", line)
 
             # Remove whitespace delimiters
-            while self.__symbol_invisible_marker in line:
-                line = line.replace(self.__symbol_invisible_marker, "")
+            while SYNTAX_INVISIBLE_MARKER in line:
+                line = line.replace(SYNTAX_INVISIBLE_MARKER, "")
 
             # Ignore empty lines
             if line == "":
                 continue
 
             # Handle pairs
-            if self.__symbol_pair_delimiter in line:
-                parts = line.split(self.__symbol_pair_delimiter)
+            if SYNTAX_PAIR_DELIMITER in line:
+                parts = line.split(SYNTAX_PAIR_DELIMITER)
                 line = ""
                 pair_index = 0
                 for part in parts:
@@ -77,13 +93,13 @@ class FritiofObject:
                     line += ("[pair%d:%s]" % (pair_index, part))
 
             # Handle tag-separation symbols
-            if line.startswith(self.__symbol_new_tag):
+            if line.startswith(SYNTAX_NEW_TAG):
                 current_tag_name = line[1:]
                 if current_tag_name == "":
                     print("Fritiof Syntax Error: a tag must have a name of at least 1 (%s)" % line)
                     return
 
-                if not self.is_allowed_tag_name(current_tag_name):
+                if not is_allowed_tag_name(current_tag_name):
                     self.tags = {}
                     return
             else:
@@ -92,8 +108,9 @@ class FritiofObject:
                     return
                 self.add_tag(current_tag_name, line)
 
-    # Adds a single string to a tag. If the key is new, a new tag is created
     def add_tag(self, tag_name, tag_contents):
+        """Adds a single string to a tag. If the key is new, a new tag is created"""
+
         # If the tag already exists, just add it to that list
         if tag_name in self.tags:
             self.tags[tag_name].append(tag_contents)
@@ -102,8 +119,8 @@ class FritiofObject:
             self.tags[tag_name] = list()
             self.tags[tag_name].append(tag_contents)
 
-    # Returns a random string from a tag
     def get_string_from_tag(self, tag):
+        """Returns a random string from a tag"""
 
         if self.debug_mode:
             wrapper = "{%s}"
@@ -117,8 +134,8 @@ class FritiofObject:
         print("Fritiof Error: no such tag or variable '%s'" % tag)
         return "{%s}" % tag
 
-    # Executes a single line of fritiof and returns the resulting string (if any)
     def execute(self, line_of_code):
+        """Executes a single line of fritiof and returns the resulting string (if any)"""
         result = line_of_code
 
         find_var_setting_regex = r'\[[^:]+:[^\]]*\]'
@@ -128,19 +145,15 @@ class FritiofObject:
         while tagsearch_obj or set_var_search_obj:
 
             # Determine what comes first, a variable setting or a string grab
-            high_num = 9223372036854775807
-            set_index = high_num
-            string_index = high_num
+            set_index = SYS_MAX_INT
+            string_index = SYS_MAX_INT
             if set_var_search_obj:
                 set_index = result.index(set_var_search_obj.group())
             if tagsearch_obj:
                 string_index = result.index(tagsearch_obj.group())
 
-            grab_value_comes_first = set_index > string_index
-
             # Grab the first value and replace it with something from the tag
-            if grab_value_comes_first:
-
+            if set_index > string_index:
                 tag = tagsearch_obj.group().replace("#", "")
                 if tag.endswith(".capitalize"):
                     tag = tag.replace(".capitalize", "")
@@ -168,19 +181,20 @@ class FritiofObject:
         result = result.replace("\\\"", "\"")
         return result
 
-    # Inserts the content of any referenced files into the file
     def insert_external_files(self, source):
+        """Inserts the content of any referenced files into the file"""
         result = ""
 
         for line in source.split("\n"):
 
-            if line.startswith(self.__symbol_insert_file):
+            if line.startswith(SYNTAX_INSERT_FILE):
                 if self.dictionary_directory == "":
                     print("Fritiof Error: No dictionary directory set!")
                     return source
                 file_to_insert = line[8:]
 
-                file_path = self.dictionary_directory + "/" + file_to_insert + "." + self.__symbol_file_ending
+                file_path = "%s/%s.%s" % (self.dictionary_directory,
+                                          file_to_insert, SYNTAX_FILE_ENDING)
                 file_path = os.path.expanduser(file_path)
 
                 if not os.path.exists(file_path):
@@ -191,7 +205,7 @@ class FritiofObject:
                 file_contents = sourcefile.read()
                 sourcefile.close()
                 result += "\n" + file_contents
-            elif line.startswith(self.__symbol_set_dictionary_folder):
+            elif line.startswith(SYNTAX_SET_DICTIONARY_FOLDER):
                 self.dictionary_directory = line[12:]
             else:
                 result += "\n" + line
@@ -200,16 +214,8 @@ class FritiofObject:
             result = self.insert_external_files(result)
         return result
 
-    # Returns if the string is a valid name for a tag
-    def is_allowed_tag_name(self, string):
-        for symbol in self.__unallowed_symbols:
-            if symbol in string:
-                print("Fritiof Syntax Error: Unallowed symbol '%s' in tag name '§%s'" % (symbol, string))
-                return False
-        return True
-
-    # Continually print the results of requested tags
     def test(self):
+        """Continually print the results of requested tags"""
         command_input = "origin"
         last_command_input = ""
 
@@ -225,7 +231,10 @@ class FritiofObject:
                 command_input = input("")
                 continue
 
-            self.reload_file(self.filepath)
+            # Reset this object and reload the file
+            self.tags = {}
+            self.dictionary_directory = ""
+            self.load(self.filepath)
 
             if command_input == "":
                 command_input = last_command_input
@@ -235,14 +244,8 @@ class FritiofObject:
             print(self.execute("#" + command_input + "#"))
             command_input = input("")
 
-    def reload_file(self, path_to_load):
-        # Reset the object
-        self.tags = {}
-        self.dictionary_directory = ""
-        self.load(path_to_load)
-
     def export_tracery(self, compact=False):
-
+        """Converts this Fritiof to tracery and exports it as a file"""
         if compact:
             joiner = '","'
             wrapper = '"%s":["%s"]'
@@ -279,6 +282,18 @@ class FritiofObject:
         print("Exported Tracery to %s" % export_path)
 
 def test_file(file):
+    """Continually tests a file"""
+
     test_fritiofobject = FritiofObject()
     test_fritiofobject.load(file)
     test_fritiofobject.test()
+
+def is_allowed_tag_name(string):
+    """Returns if the string is a valid name for a tag"""
+
+    for symbol in UNALLOWED_SYMBOLS:
+        if symbol in string:
+            print("Fritiof Syntax Error: Unallowed symbol '%s' in tag name '§%s'"
+                  % (symbol, string))
+            return False
+    return True
