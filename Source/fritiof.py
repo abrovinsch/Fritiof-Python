@@ -2,7 +2,7 @@
 #!/usr/bin/python
 """
 'Fritiof for Python'
-by Oskar Lundqvist / Abrovinsch (c) 2017
+by Oskar Lundqvist / Abrovinsch (c) 2018
 
 This module interprets the Fritiof markup language,
 made for generating procedural text.
