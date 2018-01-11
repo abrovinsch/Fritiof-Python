@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/python
 
-from sys import argv
 from random import randint
 import re
 import os
@@ -25,7 +24,7 @@ class FritiofObject:
         self.filepath = ""
 
     # Loads a .fritiof file and adds all it's data to tags
-    def load(self,path_to_load):
+    def load(self, path_to_load):
 
         # Extract the name of the file and the directory from the path
         path_to_load = os.path.expanduser(path_to_load)
@@ -58,11 +57,11 @@ class FritiofObject:
         for line in file_content.split("\n"):
 
             # Remove inline comments
-            line = re.sub(self.__symbol_inline_commment + r'.*',"",line)
+            line = re.sub(self.__symbol_inline_commment + r'.*', "", line)
 
             # Remove whitespace delimiters
             while self.__symbol_invisible_marker in line:
-                line = line.replace(self.__symbol_invisible_marker,"")
+                line = line.replace(self.__symbol_invisible_marker, "")
 
             # Ignore empty lines
             if line == "":
@@ -80,8 +79,8 @@ class FritiofObject:
             # Handle tag-separation symbols
             if line.startswith(self.__symbol_new_tag):
                 current_tag_name = line[1:]
-                if len(current_tag_name) == 0:
-                    print ("Fritiof Syntax Error: a tag must have a name of at least 1 (%s)" % line)
+                if current_tag_name == "":
+                    print("Fritiof Syntax Error: a tag must have a name of at least 1 (%s)" % line)
                     return
 
                 if not self.is_allowed_tag_name(current_tag_name):
@@ -89,14 +88,14 @@ class FritiofObject:
                     return
             else:
                 if current_tag_name == "":
-                    print ("Fritiof Syntax Error: text is not within a tag (%s)" % line)
+                    print("Fritiof Syntax Error: text is not within a tag (%s)" % line)
                     return
-                self.add_tag(current_tag_name,line)
+                self.add_tag(current_tag_name, line)
 
     # Adds a single string to a tag. If the key is new, a new tag is created
-    def add_tag(self,tag_name, tag_contents):
+    def add_tag(self, tag_name, tag_contents):
         # If the tag already exists, just add it to that list
-        if(tag_name in self.tags):
+        if tag_name in self.tags:
             self.tags[tag_name].append(tag_contents)
         # Otherwise we create that list and add the first element
         else:
@@ -104,7 +103,7 @@ class FritiofObject:
             self.tags[tag_name].append(tag_contents)
 
     # Returns a random string from a tag
-    def get_string_from_tag(self,tag):
+    def get_string_from_tag(self, tag):
 
         if self.debug_mode:
             wrapper = "{%s}"
@@ -112,29 +111,29 @@ class FritiofObject:
             wrapper = "%s"
 
         if tag in self.tags:
-            index = randint(0,len(self.tags[tag])-1)
+            index = randint(0, len(self.tags[tag])-1)
             return wrapper % self.tags[tag][index]
-        else:
-            print ("Fritiof Error: no such tag or variable '%s'" % tag)
-            return "{%s}" % tag
+
+        print("Fritiof Error: no such tag or variable '%s'" % tag)
+        return "{%s}" % tag
 
     # Executes a single line of fritiof and returns the resulting string (if any)
     def execute(self, line_of_code):
         result = line_of_code
 
         find_var_setting_regex = r'\[[^:]+:[^\]]*\]'
-        tagsearch_obj = re.search(r'#[^#]+#',result,flags=0)
-        set_var_search_obj = re.search(find_var_setting_regex,result,flags=0)
+        tagsearch_obj = re.search(r'#[^#]+#', result, flags=0)
+        set_var_search_obj = re.search(find_var_setting_regex, result, flags=0)
 
         while tagsearch_obj or set_var_search_obj:
 
             # Determine what comes first, a variable setting or a string grab
-            REALLY_HIGH_NUMBER = 9223372036854775807
-            set_index = REALLY_HIGH_NUMBER
-            string_index = REALLY_HIGH_NUMBER
-            if set_var_search_obj :
+            high_num = 9223372036854775807
+            set_index = high_num
+            string_index = high_num
+            if set_var_search_obj:
                 set_index = result.index(set_var_search_obj.group())
-            if tagsearch_obj :
+            if tagsearch_obj:
                 string_index = result.index(tagsearch_obj.group())
 
             grab_value_comes_first = set_index > string_index
@@ -142,36 +141,36 @@ class FritiofObject:
             # Grab the first value and replace it with something from the tag
             if grab_value_comes_first:
 
-                tag = tagsearch_obj.group().replace("#","")
+                tag = tagsearch_obj.group().replace("#", "")
                 if tag.endswith(".capitalize"):
-                    s = tag.replace(".capitalize","")
-                    new_string = self.get_string_from_tag(s)
+                    tag = tag.replace(".capitalize", "")
+                    new_string = self.get_string_from_tag(tag)
                     new_string = new_string.capitalize()
                 else:
                     new_string = self.get_string_from_tag(tag)
 
-                result = result.replace("#%s#" % tag,new_string,1)
-                tagsearch_obj = re.search(r'#[^#]+#',result,flags=0)
-                set_var_search_obj = re.search(find_var_setting_regex,result,flags=0)
+                result = result.replace("#%s#" % tag, new_string, 1)
+                tagsearch_obj = re.search(r'#[^#]+#', result, flags=0)
+                set_var_search_obj = re.search(find_var_setting_regex, result, flags=0)
 
             # Set the first variable
             else:
-                line = re.sub(r'[\[\]]',"",set_var_search_obj.group())
+                line = re.sub(r'[\[\]]', "", set_var_search_obj.group())
                 parts = line.split(":")
                 var_name = parts[0]
                 value = parts[1]
-                result = result.replace(set_var_search_obj.group(),"",1)
+                result = result.replace(set_var_search_obj.group(), "", 1)
                 self.tags[var_name] = list()
-                self.add_tag(var_name,value)
-                set_var_search_obj = re.search(find_var_setting_regex,result,flags=0)
-                tagsearch_obj = re.search(r'#[^#]+#',result,flags=0)
+                self.add_tag(var_name, value)
+                set_var_search_obj = re.search(find_var_setting_regex, result, flags=0)
+                tagsearch_obj = re.search(r'#[^#]+#', result, flags=0)
 
-        result = result.replace("\\\"","\"")
+        result = result.replace("\\\"", "\"")
         return result
 
     # Inserts the content of any referenced files into the file
-    def insert_external_files(self,source):
-        result = "";
+    def insert_external_files(self, source):
+        result = ""
 
         for line in source.split("\n"):
 
@@ -179,22 +178,23 @@ class FritiofObject:
                 if self.dictionary_directory == "":
                     print("Fritiof Error: No dictionary directory set!")
                     return source
-                fileToInsert = line[8:]
+                file_to_insert = line[8:]
 
-                file_path = self.dictionary_directory + "/" + fileToInsert + "." + self.__symbol_file_ending
+                file_path = self.dictionary_directory + "/" + file_to_insert + "." + self.__symbol_file_ending
                 file_path = os.path.expanduser(file_path)
 
                 if not os.path.exists(file_path):
-                    print("Fritiof Error: Cant insert non-existing file: %s" % path_to_load)
+                    print("Fritiof Error: Cant insert non-existing file: %s" % file_path)
                     return
 
                 sourcefile = open(file_path)
-                str = sourcefile.read()
-                result += "\n" + str;
+                file_contents = sourcefile.read()
+                sourcefile.close()
+                result += "\n" + file_contents
             elif line.startswith(self.__symbol_set_dictionary_folder):
                 self.dictionary_directory = line[12:]
             else:
-                result += "\n" + line;
+                result += "\n" + line
 
         if "-insert" in result:
             result = self.insert_external_files(result)
@@ -202,9 +202,9 @@ class FritiofObject:
 
     # Returns if the string is a valid name for a tag
     def is_allowed_tag_name(self, string):
-        for l in self.__unallowed_symbols:
-            if l in string:
-                print("Fritiof Syntax Error: Unallowed symbol '%s' in tag name '§%s'" % (l, string))
+        for symbol in self.__unallowed_symbols:
+            if symbol in string:
+                print("Fritiof Syntax Error: Unallowed symbol '%s' in tag name '§%s'" % (symbol, string))
                 return False
         return True
 
@@ -216,7 +216,7 @@ class FritiofObject:
         while command_input != "exit":
             if command_input == "list_tags":
                 print("Defined tags:")
-                for tag in self.tags.keys():
+                for tag in self.tags:
                     print(tag)
                 command_input = input("")
                 continue
@@ -232,16 +232,16 @@ class FritiofObject:
             else:
                 last_command_input = command_input
 
-            print (self.execute("#" + command_input + "#"))
+            print(self.execute("#" + command_input + "#"))
             command_input = input("")
 
-    def reload_file(self,path_to_load):
+    def reload_file(self, path_to_load):
         # Reset the object
         self.tags = {}
         self.dictionary_directory = ""
         self.load(path_to_load)
 
-    def export_tracery(self, compact = False):
+    def export_tracery(self, compact=False):
 
         if compact:
             joiner = '","'
@@ -253,32 +253,32 @@ class FritiofObject:
             tag_separator = ",\n\n"
 
         # Convert data to tracery format
-        tagStrings = []
-        for key in self.tags.keys():
-            tagStrings.append(wrapper % (key, joiner.join(self.tags[key])))
-        output = tag_separator.join(tagStrings) + "\n"
+        tag_strings = []
+        for key in self.tags:
+            tag_strings.append(wrapper % (key, joiner.join(self.tags[key])))
+        output = tag_separator.join(tag_strings) + "\n"
 
         # Create the path of the export file
         file_name = os.path.basename(self.filepath)
-        exportDirectory = os.path.dirname(self.filepath)
+        export_directory = os.path.dirname(self.filepath)
 
-        if exportDirectory == "":
-            exportDirectory = os.path.expanduser("~")
+        if export_directory == "":
+            export_directory = os.path.expanduser("~")
 
-        exportFileName = file_name.replace("fritiof","tracery")
-        if exportFileName == "":
-            exportFileName = "exported_tracery"
+        export_filename = file_name.replace("fritiof", "tracery")
+        if export_filename == "":
+            export_filename = "exported_tracery"
 
-        exportFileName = exportFileName.replace(".", "_") + ".txt"
-        exportPath = exportDirectory + "/" + exportFileName
+        export_filename = export_filename.replace(".", "_") + ".txt"
+        export_path = export_directory + "/" + export_filename
 
-        outputfile = open(exportPath, 'w+')
+        outputfile = open(export_path, 'w+')
         outputfile.write(output)  # python will convert \n to os.linesep
         outputfile.close()
 
-        print("Exported Tracery to %s" % exportPath)
+        print("Exported Tracery to %s" % export_path)
 
 def test_file(file):
-    testfritiofObject = FritiofObject()
-    testfritiofObject.load(file)
-    testfritiofObject.test()
+    test_fritiofobject = FritiofObject()
+    test_fritiofobject.load(file)
+    test_fritiofobject.test()
