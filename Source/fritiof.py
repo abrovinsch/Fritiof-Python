@@ -11,7 +11,7 @@ Information about how to use it can be found at:
 https://github.com/abrovinsch/Fritiof-Python/blob/master/readme.md
 """
 
-from random import randint
+import random
 import re
 import os
 
@@ -32,7 +32,7 @@ REPLACEMENTS = {
 "\\]":"<close_square_bracket>"
 }
 
-UNALLOWED_SYMBOLS = "§[]{}()¨^*|#:; \n\"\'"
+UNALLOWED_SYMBOLS = "§[]{}()¨^*|#:; \n\"\'<>\t"
 SYS_MAX_INT = 2147483647
 
 class FritiofObject:
@@ -120,13 +120,22 @@ class FritiofObject:
     def add_tag(self, tag_name, tag_contents):
         """Adds a single string to a tag. If the key is new, a new tag is created."""
 
-        # If the tag already exists, just add it to that list
+        if type(tag_contents) is str and "\n" in tag_contents:
+            tag_contents = tag_contents.split("\n")
+
+        # If the tag already exists, just add our contents to that list
         if tag_name in self.tags:
-            self.tags[tag_name].append(tag_contents)
+            if len(tag_contents) > 1:
+                for t in tag_contents:
+                    self.tags[tag_name].append(t)
+            else:
+                self.tags[tag_name].append(tag_contents)
+
         # Otherwise we create that list and add the first element
         else:
             self.tags[tag_name] = list()
-            self.tags[tag_name].append(tag_contents)
+            for t in tag_contents:
+                self.tags[tag_name].append(t)
 
     def get_string_from_tag(self, tag):
         """Returns a random string from a tag."""
@@ -137,8 +146,7 @@ class FritiofObject:
             wrapper = "%s"
 
         if tag in self.tags:
-            index = randint(0, len(self.tags[tag])-1)
-            return wrapper % self.tags[tag][index]
+            return wrapper % random.choice(self.tags[tag])
 
         print("Fritiof Error: no such tag or variable '%s'" % tag)
         return "{%s}" % tag
