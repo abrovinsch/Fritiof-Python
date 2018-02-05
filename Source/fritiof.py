@@ -26,10 +26,10 @@ SYNTAX_FILE_ENDING = "fritiof"
 
 # Replacements
 REPLACEMENTS = {
-"\\\#":"<HASH>",
-"\\n":"<nl>",
-"\\[":"<open_square_bracket>",
-"\\]":"<close_square_bracket>"
+    "\\\#":"<HASH>",
+    "\\n":"<nl>",
+    "\\[":"<open_square_bracket>",
+    "\\]":"<close_square_bracket>"
 }
 
 UNALLOWED_SYMBOLS = "§[]{}()¨^*|#:; \n\"\'<>\t"
@@ -109,9 +109,9 @@ class FritiofObject:
         """Adds a single string to a tag. If the key is new, a new tag is created."""
 
         strings_to_add = []
-        if type(tag_contents) is str and "\n" in tag_contents:
+        if isinstance(tag_contents, str) and "\n" in tag_contents:
             strings_to_add = tag_contents.split("\n")
-        elif type(tag_contents) is list:
+        elif isinstance(tag_contents, list):
             strings_to_add = tag_contents
         else:
             strings_to_add.append(tag_contents)
@@ -120,7 +120,7 @@ class FritiofObject:
         for string in strings_to_add:
             # Replace reserved symbols
             for key in REPLACEMENTS.keys():
-                string = string.replace(key,REPLACEMENTS[key])
+                string = string.replace(key, REPLACEMENTS[key])
 
             # Handle pairs
             if SYNTAX_PAIR_DELIMITER in string:
@@ -136,14 +136,14 @@ class FritiofObject:
 
         # If the tag already exists, just add our contents to that list
         if tag_name in self.tags:
-            for t in cleaned_strings:
-                self.tags[tag_name].append(t)
+            for string in cleaned_strings:
+                self.tags[tag_name].append(string)
 
         # Otherwise we create that list and add the first element
         else:
             self.tags[tag_name] = list()
-            for t in cleaned_strings:
-                self.tags[tag_name].append(t)
+            for string in cleaned_strings:
+                self.tags[tag_name].append(string)
 
     def get_string_from_tag(self, tag):
         """Returns a random string from a tag."""
@@ -331,8 +331,8 @@ def is_allowed_tag_name(string):
             return False
     return True
 
-def remove_replacements_from_string(_string):
+def remove_replacements_from_string(string):
     """Returns the given string without any replacements"""
     for key, val in REPLACEMENTS.items():
-        _string = _string.replace(val,key)
-    return _string
+        string = string.replace(val, key)
+    return string
