@@ -24,6 +24,14 @@ SYNTAX_INSERT_FILE = "-insert"
 SYNTAX_INLINE_COMMENT = "//"
 SYNTAX_FILE_ENDING = "fritiof"
 
+# Replacements
+REPLACEMENTS = {
+"\\\#":"<HASH>",
+"\\n":"<nl>",
+"\\[":"<open_square_bracket>",
+"\\]":"<close_square_bracket>"
+}
+
 UNALLOWED_SYMBOLS = "§[]{}()¨^*|#:; \n\"\'"
 SYS_MAX_INT = 2147483647
 
@@ -39,7 +47,7 @@ class FritiofObject:
         self.filepath = ""
 
     def load(self, path_to_load):
-        """Loads a .fritiof file and adds all it's data to tags"""
+        """Loads a .fritiof file and adds all it's data to tags."""
 
         # Extract the name of the file and the directory from the path
         path_to_load = os.path.expanduser(path_to_load)
@@ -71,16 +79,22 @@ class FritiofObject:
 
         # Go through line for line
         for line in file_content.split("\n"):
+
+            # Replace reserved symbols
+            for key in REPLACEMENTS.keys():
+                line = line.replace(key,REPLACEMENTS[key])
+
             # Remove inline comments
             line = re.sub(SYNTAX_INLINE_COMMENT + r'.*', "", line)
+
+
+            # Ignore empty lines
+            if not line:
+                continue
 
             # Remove whitespace delimiters
             while SYNTAX_INVISIBLE_MARKER in line:
                 line = line.replace(SYNTAX_INVISIBLE_MARKER, "")
-
-            # Ignore empty lines
-            if line == "":
-                continue
 
             # Handle pairs
             if SYNTAX_PAIR_DELIMITER in line:
@@ -98,13 +112,13 @@ class FritiofObject:
                     self.tags = {}
                     return
             else:
-                if current_tag_name == "":
+                if not current_tag_name:
                     print("Fritiof Syntax Error: text is not within a tag (%s)" % line)
                     return
                 self.add_tag(current_tag_name, line)
 
     def add_tag(self, tag_name, tag_contents):
-        """Adds a single string to a tag. If the key is new, a new tag is created"""
+        """Adds a single string to a tag. If the key is new, a new tag is created."""
 
         # If the tag already exists, just add it to that list
         if tag_name in self.tags:
@@ -115,7 +129,7 @@ class FritiofObject:
             self.tags[tag_name].append(tag_contents)
 
     def get_string_from_tag(self, tag):
-        """Returns a random string from a tag"""
+        """Returns a random string from a tag."""
 
         if self.debug_mode:
             wrapper = "{%s}"
@@ -130,7 +144,7 @@ class FritiofObject:
         return "{%s}" % tag
 
     def execute(self, line_of_code):
-        """Executes a single line of fritiof and returns the resulting string (if any)"""
+        """Executes a single line of fritiof and returns the resulting string (if any)."""
         result = line_of_code
 
         find_var_setting_regex = r'\[[^:]+:[^\]]*\]'
@@ -176,13 +190,13 @@ class FritiofObject:
         return result
 
     def insert_external_files(self, source):
-        """Inserts the content of any referenced files into the file"""
+        """Inserts the content of any referenced files into the file."""
         result = ""
 
         for line in source.split("\n"):
 
             if line.startswith(SYNTAX_INSERT_FILE):
-                if self.dictionary_directory == "":
+                if not self.dictionary_directory:
                     print("Fritiof Error: No dictionary directory set!")
                     return source
                 file_to_insert = line[8:]
@@ -192,7 +206,7 @@ class FritiofObject:
                 file_path = os.path.expanduser(file_path)
 
                 if not os.path.exists(file_path):
-                    print("Fritiof Error: Cant insert non-existing file: %s" % file_path)
+                    print("Fritiof Error: Can't insert non-existing file: %s" % file_path)
                     return
 
                 sourcefile = open(file_path)
@@ -209,7 +223,7 @@ class FritiofObject:
         return result
 
     def test(self):
-        """Continually print the results of requested tags"""
+        """Continually print the results of requested tags."""
         command_input = "origin"
         last_command_input = ""
 
@@ -226,12 +240,12 @@ class FritiofObject:
                 continue
 
             # Reset this object and reload the file
-            if command_input == "":
+            if not command_input:
                 command_input = last_command_input
             else:
                 last_command_input = command_input
 
-            print(self.execute("#" + command_input + "#"))
+            print(remove_replacements_from_string(self.execute("#" + command_input + "#")))
 
             command_input = input("")
 
@@ -240,7 +254,7 @@ class FritiofObject:
             self.load(self.filepath)
 
     def export_tracery(self, compact=False):
-        """Converts this Fritiof to tracery and exports it as a file"""
+        """Converts this Fritiof to tracery and exports it as a file."""
         if compact:
             joiner = '","'
             wrapper = '"%s":["%s"]'
@@ -255,20 +269,21 @@ class FritiofObject:
         for key in self.tags:
             tag_strings.append(wrapper % (key, joiner.join(self.tags[key])))
         output = tag_separator.join(tag_strings) + "\n"
+        output = "{\n%s\n}\n" % remove_replacements_from_string(output)
 
         # Create the path of the export file
         file_name = os.path.basename(self.filepath)
         export_directory = os.path.dirname(self.filepath)
 
-        if export_directory == "":
+        if not export_directory:
             export_directory = os.path.expanduser("~")
 
         export_filename = file_name.replace("fritiof", "tracery")
-        if export_filename == "":
+        if not export_filename:
             export_filename = "exported_tracery"
 
         export_filename = export_filename.replace(".", "_") + ".txt"
-        export_path = export_directory + "/" + export_filename
+        export_path = os.path.join(export_directory, export_filename)
 
         outputfile = open(export_path, 'w+')
         outputfile.write(output)  # python will convert \n to os.linesep
@@ -277,7 +292,7 @@ class FritiofObject:
         print("Exported Tracery to %s" % export_path)
 
 def test_file(file):
-    """Continually tests a file"""
+    """Continually tests a file."""
 
     print("Testing %s..." % file)
     test_fritiofobject = FritiofObject()
@@ -285,8 +300,8 @@ def test_file(file):
     test_fritiofobject.test()
 
 def is_allowed_tag_name(string):
-    """Returns if the string is a valid name for a tag"""
-    if string == "":
+    """Returns if the string is a valid name for a tag."""
+    if not string:
         print("Fritiof Syntax Error: a tag must have a name of at least 1 (%s)" % string)
         return False
 
@@ -296,3 +311,9 @@ def is_allowed_tag_name(string):
                   % (symbol, string))
             return False
     return True
+
+def remove_replacements_from_string(_string):
+    """Returns the given string without any replacements"""
+    for key, val in REPLACEMENTS.items():
+        _string = _string.replace(val,key)
+    return _string
