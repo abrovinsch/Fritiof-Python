@@ -286,6 +286,8 @@ class FritiofObject:
             tag_strings.append(wrapper % (key, joiner.join(self.tags[key])))
         output = tag_separator.join(tag_strings) + "\n"
         output = "{\n%s\n}\n" % remove_replacements_from_string(output)
+        output = output.replace("\\[", "[")
+        output = output.replace("\\]", "]")
 
         # Create the path of the export file
         file_name = os.path.basename(self.filepath)
