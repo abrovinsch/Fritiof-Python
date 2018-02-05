@@ -80,13 +80,8 @@ class FritiofObject:
         # Go through line for line
         for line in file_content.split("\n"):
 
-            # Replace reserved symbols
-            for key in REPLACEMENTS.keys():
-                line = line.replace(key,REPLACEMENTS[key])
-
             # Remove inline comments
             line = re.sub(SYNTAX_INLINE_COMMENT + r'.*', "", line)
-
 
             # Ignore empty lines
             if not line:
@@ -96,14 +91,7 @@ class FritiofObject:
             while SYNTAX_INVISIBLE_MARKER in line:
                 line = line.replace(SYNTAX_INVISIBLE_MARKER, "")
 
-            # Handle pairs
-            if SYNTAX_PAIR_DELIMITER in line:
-                parts = line.split(SYNTAX_PAIR_DELIMITER)
-                line = ""
-                pair_index = 0
-                for part in parts:
-                    pair_index = pair_index + 1
-                    line += ("[pair%d:%s]" % (pair_index, part))
+
 
             # Handle tag-separation symbols
             if line.startswith(SYNTAX_NEW_TAG):
@@ -120,21 +108,41 @@ class FritiofObject:
     def add_tag(self, tag_name, tag_contents):
         """Adds a single string to a tag. If the key is new, a new tag is created."""
 
+        strings_to_add = []
         if type(tag_contents) is str and "\n" in tag_contents:
-            tag_contents = tag_contents.split("\n")
+            strings_to_add = tag_contents.split("\n")
+        elif type(tag_contents) is list:
+            strings_to_add = tag_contents
+        else:
+            strings_to_add.append(tag_contents)
+
+        cleaned_strings = []
+        for string in strings_to_add:
+            # Replace reserved symbols
+            for key in REPLACEMENTS.keys():
+                string = string.replace(key,REPLACEMENTS[key])
+
+            # Handle pairs
+            if SYNTAX_PAIR_DELIMITER in string:
+
+                parts = string.split(SYNTAX_PAIR_DELIMITER)
+                string = ""
+                pair_index = 0
+                for part in parts:
+                    pair_index = pair_index + 1
+                    string += ("[pair%d:%s]" % (pair_index, part))
+
+            cleaned_strings.append(string)
 
         # If the tag already exists, just add our contents to that list
         if tag_name in self.tags:
-            if len(tag_contents) > 1:
-                for t in tag_contents:
-                    self.tags[tag_name].append(t)
-            else:
-                self.tags[tag_name].append(tag_contents)
+            for t in cleaned_strings:
+                self.tags[tag_name].append(t)
 
         # Otherwise we create that list and add the first element
         else:
             self.tags[tag_name] = list()
-            for t in tag_contents:
+            for t in cleaned_strings:
                 self.tags[tag_name].append(t)
 
     def get_string_from_tag(self, tag):
@@ -298,6 +306,7 @@ class FritiofObject:
         outputfile.close()
 
         print("Exported Tracery to %s" % export_path)
+        return output
 
 def test_file(file):
     """Continually tests a file."""
