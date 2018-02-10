@@ -44,6 +44,8 @@ class FritiofObject:
         self.dictionary_directory = ""
         self.debug_mode = False
         self.filepath = ""
+        self.usage_freqs = {}
+        self.analytics = False
 
     def load(self, path_to_load):
         """Loads a .fritiof file and adds all it's data to tags."""
@@ -152,6 +154,8 @@ class FritiofObject:
             wrapper = "%s"
 
         if tag in self.tags:
+            if self.analytics and tag in self.usage_freqs.keys():
+                self.usage_freqs[tag] += 1
             return wrapper % random.choice(self.tags[tag])
 
         fritiof_error("No such tag or variable '%s'" % tag)
@@ -221,8 +225,8 @@ class FritiofObject:
                 file_path = os.path.expanduser(file_path)
 
                 if not os.path.exists(file_path):
-                     fritiof_error("Can't insert non-existing file: %s" % file_path)
-                     return
+                    fritiof_error("Can't insert non-existing file: %s" % file_path)
+                    return
 
                 sourcefile = open(file_path)
                 file_contents = sourcefile.read()
@@ -310,12 +314,68 @@ class FritiofObject:
         outputfile.write(output)  # python will convert \n to os.linesep
         outputfile.close()
 
-        fritiof_print("Exported Tracery to %s" % export_path)
+        fritiof_msg("Exported Tracery to %s" % export_path)
 
         if open_on_export:
             os.system('open -a TextEdit "%s"' % export_path)
 
         return output
+
+    def analyze_tag_usage(self, tag, tests):
+        """Executes a tag [tests] times and see which tags it uses most"""
+
+        if not tag in self.tags or tests < 1:
+            return False
+
+
+        self.usage_freqs = {el:0 for el in list(self.tags.keys())}
+        self.analytics = True
+
+        for _ in range(tests):
+            self.execute("#%s#" % tag)
+
+        # Reset tha analytics when done
+        self.analytics = False
+
+        # Create a table with data
+        table = {}
+        for key in self.usage_freqs:
+            amount = len(self.tags[key])
+            freq = self.usage_freqs[key]
+            table[key] = (freq, amount, freq/amount/tests)
+
+        table_items = sorted(list(table.keys()), key=lambda x: table[x][0])
+        table_items.reverse()
+
+        left_margin = 30
+        print("\n" + " " * left_margin + "   FREQ  SIZE  REL FREQ")
+
+        for item in table_items:
+            # Ignore tags which are percentage functions or tags with less than 3 items
+            if table[item][0] < 1 or table[item][2] == 1 or "%" in item or table[item][1] < 3:
+                continue
+
+            rel_frequency = table[item][2] * 100
+
+            col = "\033[96m"
+            if rel_frequency > 1:
+                col = "\033[91m"
+            elif rel_frequency >= 0.5:
+                col = "\033[93m"
+            elif rel_frequency >= 0.1:
+                col = "\033[92m"
+
+            cell_rel_frequency = "{0}{1}%{2}".format(col,"%4.2f" % (rel_frequency), "\033[0m")
+            cell_frequency = "%3.0d" % (table[item][0] / (tests) * 100) + "%"
+            cell_tags_size = "%4d" % table[item][1]
+
+            line = " " * (left_margin - len(item)) + item
+            line += " | {0} |{1} | {2}".format(cell_frequency, cell_tags_size, cell_rel_frequency)
+
+            print(line)
+
+        self.usage_freqs = {}
+        return table
 
 def test_file(file):
     """Continually tests a file."""
@@ -344,11 +404,14 @@ def remove_replacements_from_string(string):
         string = string.replace(val, key)
     return string
 
-def fritiof_error(str):
-    print("\033[93mFritiof Error:\033[0m %s" % str)
+def fritiof_error(msg):
+    """Print an error"""
+    print("\033[93mFritiof Error:\033[0m %s" % msg)
 
-def fritiof_syntax_error(str):
-    print("\033[91mFritiof Syntax Error:\033[0m %s " % str)
+def fritiof_syntax_error(msg):
+    """Print a syntax error"""
+    print("\033[91mFritiof Syntax Error:\033[0m %s " % msg)
 
-def fritiof_print(str):
-    print("\033[92m%s\033[0m" % str)
+def fritiof_msg(msg):
+    """Print a message"""
+    print("\033[92m%s\033[0m" % msg)
