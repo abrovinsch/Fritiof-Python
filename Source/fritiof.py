@@ -123,6 +123,42 @@ class FritiofObject:
 
         cleaned_strings = []
         for string in strings_to_add:
+
+            # Handle fractional chances
+            find_frac_chance_regex = r'(\d+)/(\d+)\{([^\}]+)\}'
+            frac_chance_match = re.search(find_frac_chance_regex,
+                                           string,
+                                           flags=0)
+            if frac_chance_match:
+                try:
+                    denominator = int(frac_chance_match.group(1))
+                except:
+                    fritiof_syntax_error("Denominator '%s' is not a valid integer" % frac_chance_match.group(1))
+
+                try:
+                    nominator = int(frac_chance_match.group(2))
+                except:
+                    fritiof_syntax_error("Nominator '%s' is not a valid integer" % frac_chance_match.group(2))
+
+                tag_content = frac_chance_match.group(3)
+
+                if denominator > nominator:
+                    fritiof_syntax_error("The denominator must not be larger than the nominator in change tag '%s'" % string)
+                    return False
+
+                frac_chance_tag = "%s_in_%s" % (denominator, nominator)
+
+                if not frac_chance_tag in self.tags:
+                    l = []
+                    for i in range(denominator):
+                        l.append("#v#")
+
+                    for i in range(nominator - denominator):
+                        l.append("")
+
+                    self.add_tag(frac_chance_tag, l)
+                    string = "[v:%s]#%s#" % (tag_content, frac_chance_tag)
+
             # Replace reserved symbols
             for key in REPLACEMENTS.keys():
                 string = string.replace(key, REPLACEMENTS[key])
@@ -377,7 +413,7 @@ class FritiofObject:
         for item in table_items:
             # Ignore tags which are percentage functions
             # or tags with less than 3 items
-            if table[item][0] < 1 or table[item][2] == 1 or "%" in item or table[item][1] < 3:
+            if table[item][0] < 1 or table[item][2] == 1 or "_in_" in item or table[item][1] < 3:
                 continue
 
             rel_frequency = table[item][2] * 100
