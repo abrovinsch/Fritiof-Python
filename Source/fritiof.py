@@ -2,9 +2,11 @@
 #!/usr/bin/python
 """
 'Fritiof for Python'
-by Oskar Lundqvist / Abrovinsch (c) 2018
+by Oskar Lundqvist /
+Abrovinsch (c) 2018
 
-This module interprets the Fritiof markup language,
+This module interprets the
+Fritiof markup language,
 made for generating procedural text.
 
 Information about how to use it can be found at:
@@ -36,7 +38,8 @@ SYS_MAX_INT = 2147483647
 
 class FritiofObject:
     """
-    A FritiofObject contains defintions of tags and variables.
+    A FritiofObject contains
+    defintions of tags and variables.
     """
 
     def __init__(self):
@@ -45,7 +48,7 @@ class FritiofObject:
         self.debug_mode = False
         self.filepath = ""
         self.usage_freqs = {}
-        self.analytics = False
+        self.gather_stats = False
 
     def load(self, path_to_load):
         """Loads a .fritiof file and adds all it's data to tags."""
@@ -63,7 +66,7 @@ class FritiofObject:
         # Ignore files that does not have a .fritiof extension
         if not file_name.endswith(".%s" % SYNTAX_FILE_ENDING):
             fritiof_error("Can only open files with the .%s extension (%s)"
-                  % (SYNTAX_FILE_ENDING, file_name))
+                          % (SYNTAX_FILE_ENDING, file_name))
             return
 
         # Load the contents of the original file
@@ -107,7 +110,8 @@ class FritiofObject:
                 self.add_tag(current_tag_name, line)
 
     def add_tag(self, tag_name, tag_contents):
-        """Adds a single string to a tag. If the key is new, a new tag is created."""
+        """Adds a single string to a tag.
+        If the key is new, a new tag is created."""
 
         strings_to_add = []
         if isinstance(tag_contents, str) and "\n" in tag_contents:
@@ -154,7 +158,7 @@ class FritiofObject:
             wrapper = "%s"
 
         if tag in self.tags:
-            if self.analytics and tag in self.usage_freqs.keys():
+            if self.gather_stats and tag in self.usage_freqs.keys():
                 self.usage_freqs[tag] += 1
             return wrapper % random.choice(self.tags[tag])
 
@@ -162,16 +166,20 @@ class FritiofObject:
         return "{%s}" % tag
 
     def execute(self, line_of_code):
-        """Executes a single line of fritiof and returns the resulting string (if any)."""
+        """Executes a single line of fritiof and
+        returns the resulting string (if any)."""
         result = line_of_code
 
         find_var_setting_regex = r'\[[^:]+:[^\]]*\]'
 
         tagsearch_obj = re.search(r'#[^#]+#', result, flags=0)
-        set_var_search_obj = re.search(find_var_setting_regex, result, flags=0)
+        set_var_search_obj = re.search(find_var_setting_regex,
+                                       result,
+                                       flags=0)
 
         while tagsearch_obj or set_var_search_obj:
-            # Determine what comes first, a variable setting or a string grab
+            # Determine what comes first,
+            # a variable setting or a string grab
             set_index = SYS_MAX_INT
             string_index = SYS_MAX_INT
             if set_var_search_obj:
@@ -179,7 +187,8 @@ class FritiofObject:
             if tagsearch_obj:
                 string_index = result.index(tagsearch_obj.group())
 
-            # Grab the first value and replace it with something from the tag
+            # Grab the first value and
+            # replace it with something from the tag
             if set_index > string_index:
                 tag = tagsearch_obj.group().replace("#", "")
                 if tag.endswith(".capitalize"):
@@ -209,11 +218,12 @@ class FritiofObject:
         return result
 
     def insert_external_files(self, source):
-        """Inserts the content of any referenced files into the file."""
+        """Inserts the content of any
+        referenced files into the file."""
+
         result = ""
 
         for line in source.split("\n"):
-
             if line.startswith(SYNTAX_INSERT_FILE):
                 if not self.dictionary_directory:
                     fritiof_error("No dictionary directory set!")
@@ -225,7 +235,8 @@ class FritiofObject:
                 file_path = os.path.expanduser(file_path)
 
                 if not os.path.exists(file_path):
-                    fritiof_error("Can't insert non-existing file: %s" % file_path)
+                    fritiof_error("Can't insert non-existing file: %s" %
+                                  file_path)
                     return
 
                 sourcefile = open(file_path)
@@ -257,6 +268,15 @@ class FritiofObject:
                 self.export_tracery()
                 command_input = input("")
                 continue
+            elif command_input.startswith("tagstats"):
+                if " " in command_input:
+                    tags_to_test = command_input.split(" ")[1]
+                else:
+                    tags_to_test = "origin"
+
+                self.print_usage_stats(tags_to_test,5000)
+                command_input = input("")
+                continue
 
             # Reset this object and reload the file
             if not command_input:
@@ -264,7 +284,7 @@ class FritiofObject:
             else:
                 last_command_input = command_input
 
-            print(remove_replacements_from_string(self.execute("#" + command_input + "#")))
+            print(remove_replacements(self.execute("#%s#" % command_input)))
 
             command_input = input("")
 
@@ -273,7 +293,8 @@ class FritiofObject:
             self.load(self.filepath)
 
     def export_tracery(self, compact=False, open_on_export=True):
-        """Converts this Fritiof to tracery and exports it as a file."""
+        """Converts this Fritiof to tracery
+        and exports it as a file."""
         if compact:
             joiner = '","'
             wrapper = '"%s":["%s"]'
@@ -290,11 +311,11 @@ class FritiofObject:
             tag = self.tags[key]
             tag = [w.replace('"', '\\"') for w in tag]
             tag_strings.append(wrapper % (key, joiner.join(tag)))
+
         output = tag_separator.join(tag_strings) + "\n"
-        output = "{\n%s\n}\n" % remove_replacements_from_string(output)
+        output = "{\n%s\n}\n" % remove_replacements(output)
         output = output.replace("\\[", "[")
         output = output.replace("\\]", "]")
-
 
         # Create the path of the export file
         file_name = os.path.basename(self.filepath)
@@ -321,21 +342,23 @@ class FritiofObject:
 
         return output
 
-    def analyze_tag_usage(self, tag, tests):
-        """Executes a tag [tests] times and see which tags it uses most"""
+    def print_usage_stats(self, tag, tests):
+        """Executes a tag [tests] times and
+         see which tags it uses most"""
 
+        # Check parameters
         if not tag in self.tags or tests < 1:
             return False
 
-
         self.usage_freqs = {el:0 for el in list(self.tags.keys())}
-        self.analytics = True
+        self.gather_stats = True
 
+        # Gather usage statistics data
         for _ in range(tests):
             self.execute("#%s#" % tag)
 
-        # Reset tha analytics when done
-        self.analytics = False
+        # Reset the stats when done
+        self.gather_stats = False
 
         # Create a table with data
         table = {}
@@ -347,11 +370,13 @@ class FritiofObject:
         table_items = sorted(list(table.keys()), key=lambda x: table[x][0])
         table_items.reverse()
 
+        # Print the table
         left_margin = 30
         print("\n" + " " * left_margin + "   FREQ  SIZE  REL FREQ")
 
         for item in table_items:
-            # Ignore tags which are percentage functions or tags with less than 3 items
+            # Ignore tags which are percentage functions
+            # or tags with less than 3 items
             if table[item][0] < 1 or table[item][2] == 1 or "%" in item or table[item][1] < 3:
                 continue
 
@@ -365,16 +390,17 @@ class FritiofObject:
             elif rel_frequency >= 0.1:
                 col = "\033[92m"
 
-            cell_rel_frequency = "{0}{1}%{2}".format(col,"%4.2f" % (rel_frequency), "\033[0m")
+            cell_rel_frequency = "{0}{1}%{2}".format(col, "%4.2f" % (rel_frequency), "\033[0m")
             cell_frequency = "%3.0d" % (table[item][0] / (tests) * 100) + "%"
             cell_tags_size = "%4d" % table[item][1]
 
             line = " " * (left_margin - len(item)) + item
-            line += " | {0} |{1} | {2}".format(cell_frequency, cell_tags_size, cell_rel_frequency)
-
+            line += " | {0} |{1} | {2}".format(cell_frequency,
+                                               cell_tags_size,
+                                               cell_rel_frequency)
             print(line)
 
-        self.usage_freqs = {}
+        self.usage_freqs = {} # Reset the usage statistics table
         return table
 
 def test_file(file):
@@ -393,12 +419,11 @@ def is_allowed_tag_name(string):
 
     for symbol in UNALLOWED_SYMBOLS:
         if symbol in string:
-            fritiof_syntax_error("Unallowed symbol '%s' in tag name '§%s'"
-                  % (symbol, string))
+            fritiof_syntax_error("Unallowed symbol '%s' in tag name '§%s'" % (symbol, string))
             return False
     return True
 
-def remove_replacements_from_string(string):
+def remove_replacements(string):
     """Returns the given string without any replacements"""
     for key, val in REPLACEMENTS.items():
         string = string.replace(val, key)
