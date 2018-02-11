@@ -129,7 +129,7 @@ class FritiofObject:
             frac_chance_match = re.search(find_frac_chance_regex,
                                            string,
                                            flags=0)
-            if frac_chance_match:
+            while frac_chance_match:
                 try:
                     denominator = int(frac_chance_match.group(1))
                 except:
@@ -157,7 +157,11 @@ class FritiofObject:
                         l.append("")
 
                     self.add_tag(frac_chance_tag, l)
-                    string = "[v:%s]#%s#" % (tag_content, frac_chance_tag)
+                replacement = "[v:%s]#%s#" % (tag_content, frac_chance_tag)
+                string = string.replace(frac_chance_match.group(0),replacement)
+                frac_chance_match = re.search(find_frac_chance_regex,
+                                               string,
+                                               flags=0)
 
             # Replace reserved symbols
             for key in REPLACEMENTS.keys():
